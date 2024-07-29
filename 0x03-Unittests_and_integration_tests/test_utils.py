@@ -1,61 +1,87 @@
 #!/usr/bin/env python3
-"""A module for testing the utils module
-"""
-
+'''A module for testing the utils module
+'''
 
 import unittest
-from parameterized import parameterized
-from utils import access_nested_map, get_json, memoize
 from unittest.mock import Mock, patch
+from parameterized import parameterized
 
+from typing import (
+    Dict,
+    Mapping,
+    Sequence,
+    Tuple,
+    Union,
+)
 
-'''Test case for `utils.access_nested_map` function.
-'''
+from utils import (
+    access_nested_map,
+    get_json,
+    memoize,
+)
 
 
 class TestAccessNestedMap(unittest.TestCase):
+    '''Test case for `utils.access_nested_map` function.
+    '''
+
     @parameterized.expand([
         ({"a": 1}, ("a",), 1),
         ({"a": {"b": 2}}, ("a",), {"b": 2}),
         ({"a": {"b": 2}}, ("a", "b"), 2),
     ])
-    def test_access_nested_map(self, nested_map, path, expected):
+    def test_access_nested_map(
+            self,
+            nested_map: Mapping,
+            path: Sequence,
+            expected: Union[Dict, int]
+            ) -> None:
+        '''Tests `access_nexted_map`'s output
+        '''
         self.assertEqual(access_nested_map(nested_map, path), expected)
 
-    '''Tests `access_nested_map`'s exception raising.
-    '''
     @parameterized.expand([
-        ({}, ("a"), KeyError),
+        ({}, ("a",), KeyError),
         ({"a": 1}, ("a", "b"), KeyError),
     ])
-    def test_access_nested_map_exception(self, nested_map, path, exception):
+    def test_access_nested_map_exception(
+            self,
+            nested_map: Mapping,
+            path: Sequence,
+            exception: Exception,
+            ) -> None:
+        '''Tests `access_nested_map`'s exception raising.
+        '''
         with self.assertRaises(exception):
             access_nested_map(nested_map, path)
 
 
 class TestGetJson(unittest.TestCase):
+    '''Tests the `utils.get_json` function.
+    '''
+
     @parameterized.expand([
         ("http://example.com", {"payload": True}),
         ("http://holberton.io", {"payload": False}),
     ])
-    @patch("utils.requests.get")
-    def test_get_json(self, test_url, test_payload, mock_get):
-        # Arrange
-        mock_response = Mock()
-        mock_response.json.return_value = test_payload
-        mock_get.return_value = mock_response
+    def test_get_json(
+            self,
+            test_url: str,
+            test_payload: Dict,
+            ) -> None:
+        '''Tests `get_json`'s output.
+        '''
 
-        # Act
-        result = get_json(test_url)
+        attrs = {'json.return_value': test_payload}
 
-        # Assert
-        self.assertEqual(result, test_payload)
-        mock_get.assert_called_once_with(test_url)
+        with patch("requests.get", return_value=Mock(**attrs)) as req_get:
+            self.assertEqual(get_json(test_url), test_payload)
+            req_get.assert_called_once_with(test_url)
 
 
 class TestMemoize(unittest.TestCase):
-    """Test memoization """
-    def test_memoize(self):
+    """Tests the `memoize` function."""
+    def test_memoize(self) -> None:
         """Tests `memoize`'s output."""
         class TestClass:
             def a_method(self):
@@ -65,17 +91,11 @@ class TestMemoize(unittest.TestCase):
             def a_property(self):
                 return self.a_method()
         with patch.object(
-            TestClass, 'a_method', return_value=42
-                ) as mock_method:
-            test_instance = TestClass()
-
-            result1 = test_instance.a_property
-            result2 = test_instance.a_property
-
-            self.assertEqual(result1, 42)
-            self.assertEqual(result2, 42)
-            mock_method.assert_called_once()
-
-
-if __name__ == "__main__":
-    unittest.main()
+                TestClass,
+                "a_method",
+                return_value=lambda: 42,
+                ) as memo_fxn:
+            test_class = TestClass()
+            self.assertEqual(test_class.a_property(), 42)
+            self.assertEqual(test_class.a_property(), 42)
+            memo_fxn.assert_called_once()
