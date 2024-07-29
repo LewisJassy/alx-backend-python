@@ -59,16 +59,19 @@ class TestMemoize(unittest.TestCase):
         class TestClass:
             def a_method(self):
                 return 42
-            
+
             @memoize
             def a_property(self):
                 return self.a_method()
-        with patch.object(TestClass, 'a_method', return_value=42) as mock_method:
+        with patch.object(
+            TestClass, 'a_method', return_value=42
+                ) as mock_method:
             test_instance = TestClass()
 
             # First call to a_property should call a_method
             result1 = test_instance.a_property
-            # Second call to a_property should return cached result and not call a_method again
+            # Second call to a_property should return
+            # cached result and not call a_method again
             result2 = test_instance.a_property
 
             self.assertEqual(result1, 42)
